@@ -1,29 +1,51 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import { Colors } from "@/constants/Colors";
+import { tokenCache } from "@/utils/cache";
+import { ClerkLoaded, ClerkLoading, ClerkProvider, useAuth } from "@clerk/clerk-expo";
+import { Stack, usePathname, useRouter, useSegments } from "expo-router";
+import { useEffect } from "react";
+import { Text } from "react-native";
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
+if (!CLERK_PUBLISHABLE_KEY) {
+  throw new Error("Missing CLERK_PUBLISHABLE_KEY");
+}
 
-  if (!loaded) {
-    // Async font loading only occurs in development.
-    return null;
-  }
+const InitialLayout = () => {
+  const { isLoaded, isSignedIn } = useAuth();
+  const router = useRouter();
+  const segment = useSegments();
+  const pathname = usePathname();
 
+  useEffect(() => {
+    if (!isLoaded) return;
+    const inAuthGroup = segment[0] === "(authenticated)";
+    if (isSignedIn && !inAuthGroup) {
+      router.replace('/(authenticated)/(tabs)/today');
+    } else if (!isSignedIn && pathname === '/') {
+      router.replace('/');
+    }
+  }, [isLoaded, isSignedIn, segment]);
+
+  // Always render the Stack, even while loading or redirecting
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: Colors.background } }}>
+      <Stack.Screen name="index"/>
+    </Stack>
+  );
+};
+
+const RootLayout = () => {
+  return (
+    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY} tokenCache={tokenCache}>
+      <ClerkLoaded>
+        <InitialLayout />
+      </ClerkLoaded>
+      <ClerkLoading>
+        <Text>Loading...</Text>
+      </ClerkLoading>
+    </ClerkProvider>
   );
 }
+
+export default RootLayout;
