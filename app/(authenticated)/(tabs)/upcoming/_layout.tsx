@@ -1,9 +1,21 @@
+import MoreButton from "@/components/MoreButton";
+import { Colors } from "@/constants/Colors";
 import { Stack } from "expo-router";
 
 const Layout = () => {
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ title: "Browse" }} />
+    <Stack screenOptions={{ contentStyle: { backgroundColor: Colors.background } }}>
+      <Stack.Screen 
+        name="index" 
+        options={{ 
+          title: "Upcoming", 
+          headerShadowVisible: false,
+          headerLargeTitle: true, 
+          headerLargeTitleStyle: { fontSize: 24, fontWeight: "bold" }, 
+          headerTitleAlign: "center", 
+          headerRight: () => <MoreButton pageName="Upcoming" /> 
+        }} 
+      />
     </Stack>
   );
 };

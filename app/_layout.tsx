@@ -3,7 +3,14 @@ import { tokenCache } from "@/utils/cache";
 import { ClerkLoaded, ClerkLoading, ClerkProvider, useAuth } from "@clerk/clerk-expo";
 import { Stack, usePathname, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
-import { Text } from "react-native";
+import { LogBox, Text } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Toaster } from "sonner-native";
+
+
+
+
+LogBox.ignoreLogs(['Clerk: Clerk has been loaded with development keys.']);
 
 const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -19,10 +26,14 @@ const InitialLayout = () => {
 
   useEffect(() => {
     if (!isLoaded) return;
+    
     const inAuthGroup = segment[0] === "(authenticated)";
+    
     if (isSignedIn && !inAuthGroup) {
+      // User is signed in but not in authenticated group, redirect to authenticated area
       router.replace('/(authenticated)/(tabs)/today');
-    } else if (!isSignedIn && pathname === '/') {
+    } else if (!isSignedIn && pathname !== '/') {
+      // User is not signed in but trying to access authenticated area, redirect to login
       router.replace('/');
     }
   }, [isLoaded, isSignedIn, segment]);
@@ -39,9 +50,13 @@ const RootLayout = () => {
   return (
     <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY} tokenCache={tokenCache}>
       <ClerkLoaded>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+        <Toaster />
         <InitialLayout />
+        </GestureHandlerRootView>
       </ClerkLoaded>
       <ClerkLoading>
+
         <Text>Loading...</Text>
       </ClerkLoading>
     </ClerkProvider>

@@ -2,7 +2,7 @@ import { Colors } from "@/constants/Colors";
 import { useOAuth } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
-import { Button, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function Index() {
@@ -48,14 +48,15 @@ const openLink = async () => {
     <View
       style={[styles.container, { marginTop: top }]}
     >
-      {/* <Image source ={require("@/assets/images/Full Color Logo.png")} style={styles.logo} /> */}
-      <Button title="Open Link" onPress={openLink} />
+      <Image source ={require("@/assets/images/Logo/Full Color Logo.png")} style={styles.logo} />
       <View style={styles.buttonsContainer}></View>
-     
+      <Image source ={require("@/assets/images/med.png")} style={styles.banner} />
+
         <TouchableOpacity style={styles.button} onPress={handleGoogleOAuth}>
           {/* <Image source={require("@/assets/images/google.png")} style={styles.buttonIcon} /> */}
           <Ionicons name="logo-google" size={20} color="#fff" />
           <Text style={styles.buttonText}>Continue with Google</Text>
+
         </TouchableOpacity>
         <View style={styles.termsContainer}>
         <Text style={styles.orText}>By continuing, you agree to our <Text style={styles.link} onPress={openLink}>Terms and Conditions</Text> and <Text style={styles.link} onPress={openLink}>Privacy Policy</Text></Text>
@@ -66,12 +67,19 @@ const openLink = async () => {
 
 const styles = StyleSheet.create({
   container: {
-    gap: 40,
-    marginTop: 20,
+    gap: 10,
+    marginTop: 10,
   },
   logo: {
-    width: 200,
+    width: 250,
     height: 100,
+    resizeMode: "contain",
+    alignSelf: "center",
+    marginBottom: 20,
+  },
+  banner: {
+    width: 250,
+    height: 250,
     resizeMode: "contain",
     alignSelf: "center",
     marginBottom: 20,
