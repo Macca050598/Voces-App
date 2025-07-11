@@ -4,13 +4,14 @@ import { supabase } from "@/utils/supabase";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import { useEffect } from "react";
-import { Dimensions, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { Dimensions, FlatList, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const CARD_DATA = [
   { key: "app-usage", label: "App Usage", route: "/(authenticated)/alexaSkillSections/appusage" },
   { key: "guides", label: "Guides", route: "/(authenticated)/alexaSkillSections/guides" },
   { key: "medical-supplies", label: "Medical Supplies", route: "/(authenticated)/alexaSkillSections/medicalSupply" },
+  { key: "pharmacy-supplies", label: "Pharmacy Supplies", route: "/(authenticated)/alexaSkillSections/pharmacySupply" },
   { key: "settings", label: "Settings", route: "/(authenticated)/alexaSkillSections/settings" },
   { key: "store", label: "Store", route: "/(authenticated)/alexaSkillSections/store" },
 ];
@@ -37,7 +38,7 @@ export default function AlexaSkill() {
   return (
     <View style={[styles.container, { paddingTop: top }]}> 
       <BackgroundLogo opacity={1} position="right" />
-      <Text style={styles.title}>Web App</Text>
+      <Image source={require("@/assets/images/Logo/Full Color Logo Transparent.png")} style={styles.logo} />
       <FlatList
         data={CARD_DATA}
         numColumns={2}
@@ -111,5 +112,11 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     textAlign: "center",
     letterSpacing: 0.2,
+  },
+  logo: {
+    width: 300,
+    height: 100,
+    marginBottom: 0,
+    alignSelf: "center",
   },
 }); 

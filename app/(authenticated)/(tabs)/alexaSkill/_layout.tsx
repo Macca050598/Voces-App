@@ -7,7 +7,8 @@ const Layout = () => {
       <Stack.Screen 
         name="index" 
         options={{ 
-          title: "Web App", 
+          title: "Voces", 
+
           headerLargeTitle: true, 
           headerLargeTitleStyle: { fontSize: 24, fontWeight: "bold" }, 
           headerTitleAlign: "center", 

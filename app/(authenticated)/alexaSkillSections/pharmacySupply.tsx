@@ -65,7 +65,7 @@ export default function MedicalSupply() {
   const fetchSupplies = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from("medicaltracking")
+      .from("pharmacytracking")
       .select("id, drug_name, generic_name, manufacturer, lot_number, expiration_date, quantity, unit_of_measure, category, usage_history")
       .order("drug_name", { ascending: true });
     if (!error && data) setSupplies(data as MedicalSupply[]);
@@ -102,7 +102,7 @@ export default function MedicalSupply() {
       ? [newUsage, ...selectedDrug.usage_history]
       : [newUsage];
     const { error } = await supabase
-      .from("medicaltracking")
+      .from("pharmacytracking")
       .update({
         quantity: newQuantity,
         usage_history: updatedHistory,
@@ -141,7 +141,7 @@ export default function MedicalSupply() {
   const handleAddSupply = async () => {
     if (!addForm.drug_name || !addForm.quantity || isNaN(Number(addForm.quantity))) return;
     setAddLoading(true);
-    const { error } = await supabase.from("medicaltracking").insert([
+    const { error } = await supabase.from("pharmacytracking").insert([
       {
         ...addForm,
         quantity: Number(addForm.quantity),

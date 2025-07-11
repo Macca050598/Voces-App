@@ -19,7 +19,8 @@ export default function Browse() {
 
   return (
     <View style={[styles.container, { paddingTop: top }]}>
-      
+            {/* <Image source={require("@/assets/images/Logo/Full Color Logo Transparent.png")} style={styles.logo} /> */}
+
       <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Ionicons name="log-out-outline" size={20} color="#fff" />
         <Text style={styles.logoutText}>Logout</Text>
@@ -54,5 +55,11 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "600",
+  },
+  logo: {
+    width: 300,
+    height: 100,
+    marginBottom: 0,
+    alignSelf: "center",
   },
 });
