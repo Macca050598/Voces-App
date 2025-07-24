@@ -9,28 +9,37 @@ export default function TabLayout() {
         tabBarInactiveTintColor: Colors.lightText,
         headerShown: false,
     }}>
-      <Tabs.Screen
-        name="today"
+        <Tabs.Screen
+        name="alexaSkill"
         options={{
-          title: "Today",
+          title: "Voces",
           tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) => (
-            <Ionicons name="calendar" color={color} size={size} />
+            <Ionicons name="globe-outline" color={color} size={size} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="tasks"
+        options={{
+          title: "Tasks",
+          tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) => (
+            <Ionicons name="bookmark-outline" color={color} size={size} />
           ),
         }}
       />
       <Tabs.Screen
         name="upcoming"
         options={{
-          title: "Upcoming",
+          title: "Calendar",
           tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) => (
             <Ionicons name="calendar-outline" color={color} size={size} />
           ),
         }}
       />
        <Tabs.Screen
-        name="search"
+        name="supplys"
         options={{
-          title: "Search",
+          title: "Supplys",
           tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) => (
             <Ionicons name="search" color={color} size={size} />
           ),
@@ -45,15 +54,7 @@ export default function TabLayout() {
           ),
         }}
       />
-       <Tabs.Screen
-        name="alexaSkill"
-        options={{
-          title: "Alexa Skill",
-          tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) => (
-            <Ionicons name="globe-outline" color={color} size={size} />
-          ),
-        }}
-      />
+     
      
     </Tabs> 
   );

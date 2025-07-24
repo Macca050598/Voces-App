@@ -1,3 +1,4 @@
+import MoreButton from "@/components/MoreButton";
 import { Colors } from "@/constants/Colors";
 import { Stack } from "expo-router";
 
@@ -7,17 +8,12 @@ const Layout = () => {
       <Stack.Screen 
         name="index" 
         options={{ 
-          title: "Search", 
-          headerShadowVisible: false,
+          title: "Tasks", 
           headerLargeTitle: true, 
+          headerShadowVisible: false,
           headerLargeTitleStyle: { fontSize: 24, fontWeight: "bold" }, 
           headerTitleAlign: "center", 
-          headerSearchBarOptions: {
-            placeholder: "Search",
-            tintColor: Colors.primary,
-            hideNavigationBar: true,
-            hideWhenScrolling: true,
-          }, 
+          headerRight: () => <MoreButton pageName="Tasks" /> 
         }} 
       />
     </Stack>

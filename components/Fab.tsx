@@ -9,7 +9,7 @@ const Fab = () => {
 
   const onPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push("/(authenticated)/task/new");
+    router.push("/(authenticated)/task/newTask");
   }
   
   return (

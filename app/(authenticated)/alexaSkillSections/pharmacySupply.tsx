@@ -3,7 +3,9 @@ import { supabase } from "@/utils/supabase";
 import DateTimePicker from '@react-native-community/datetimepicker';
 // import { Picker } from '@react-native-picker/picker';
 import { DropdownMenu, MenuOption } from "@/components/menuTrigger";
-import React, { useEffect, useState } from "react";
+import { useUser } from '@clerk/clerk-expo';
+import { useFocusEffect } from "@react-navigation/native";
+import React, { useState } from "react";
 import {
   FlatList,
   Modal,
@@ -16,7 +18,7 @@ import {
   View,
 } from "react-native";
 
-interface MedicalSupply {
+interface PharmacySupply {
   id: string;
   drug_name: string;
   generic_name: string | null;
@@ -32,12 +34,12 @@ interface MedicalSupply {
 const UNITS = ["ml", "tablets", "vials", "ampoules", "capsules"];
 const CATEGORIES = ["antibiotic", "antiseptic", "analgesic", "emergency", "anesthetic"];
 
-export default function MedicalSupply() {
-  const [supplies, setSupplies] = useState<MedicalSupply[]>([]);
+export default function PharmacySupply() {
+  const [supplies, setSupplies] = useState<PharmacySupply[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUsageModal, setShowUsageModal] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [selectedDrug, setSelectedDrug] = useState<MedicalSupply | null>(null);
+  const [selectedDrug, setSelectedDrug] = useState<PharmacySupply | null>(null);
   const [usageAmount, setUsageAmount] = useState("");
   const [usageNotes, setUsageNotes] = useState("");
   const [addForm, setAddForm] = useState({
@@ -52,26 +54,34 @@ export default function MedicalSupply() {
     storage_conditions: "",
     notes: "",
   });
+  const { user } = useUser();
+  const userId = user?.id;
   const [addLoading, setAddLoading] = useState(false);
   const [usageLoading, setUsageLoading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [unitDropdownVisible, setUnitDropdownVisible] = useState(false);
   const [catDropdownVisible, setCatDropdownVisible] = useState(false);
 
-  useEffect(() => {
-    fetchSupplies();
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      if (!userId) return;
+      fetchSupplies();
+    }, [userId])
+  );
 
   const fetchSupplies = async () => {
+    if (!userId) return;
     setLoading(true);
     const { data, error } = await supabase
       .from("pharmacytracking")
-      .select("id, drug_name, generic_name, manufacturer, lot_number, expiration_date, quantity, unit_of_measure, category, usage_history")
+      .select("id, drug_name, generic_name, manufacturer, lot_number, expiration_date, quantity, unit_of_measure, category, usage_history, storage_conditions, notes")
+      .eq("user_id", userId)
       .order("drug_name", { ascending: true });
-    if (!error && data) setSupplies(data as MedicalSupply[]);
+    if (!error && data) setSupplies(data as PharmacySupply[]);
     setLoading(false);
   };
 
+  console.log(supplies);
   const getStatus = (expiration: string | null) => {
     if (!expiration) return { label: "In Stock", style: styles.inStock };
     const now = new Date();
@@ -97,6 +107,7 @@ export default function MedicalSupply() {
       amount: used,
       notes: usageNotes,
       timestamp: new Date().toISOString(),
+      user_id: userId,
     };
     const updatedHistory = Array.isArray(selectedDrug.usage_history)
       ? [newUsage, ...selectedDrug.usage_history]
@@ -127,7 +138,7 @@ export default function MedicalSupply() {
       unit_of_measure: UNITS[0],
       category: CATEGORIES[0],
       storage_conditions: "",
-      notes: "",
+      notes: ""
     });
     setShowAddModal(true);
   };
@@ -145,6 +156,7 @@ export default function MedicalSupply() {
       {
         ...addForm,
         quantity: Number(addForm.quantity),
+        user_id: userId,
       },
     ]);
     setAddLoading(false);
@@ -154,7 +166,7 @@ export default function MedicalSupply() {
     }
   };
 
-  const renderItem = ({ item }: { item: MedicalSupply }) => {
+  const renderItem = ({ item }: { item: PharmacySupply }) => {
     const status = getStatus(item.expiration_date);
     return (
       <View style={styles.card}>

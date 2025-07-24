@@ -3,13 +3,13 @@ import { supabase } from "@/utils/supabase";
 import { useUser } from '@clerk/clerk-expo';
 import React, { useEffect, useState } from "react";
 import {
-    Modal,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 
 interface PracticeInfo {
@@ -81,7 +81,7 @@ export default function Settings() {
   const handleTeamMemberChange = (idx: number, value: string) => {
     if (!editForm) return;
     const updated = [...editForm.team_members];
-    updated[idx] = value;
+    updated[idx] = { ...updated[idx] as any, name: value };
     setEditForm({ ...editForm, team_members: updated });
   };
 
@@ -145,8 +145,12 @@ export default function Settings() {
             <Text style={styles.value}>{practice?.phone}</Text>
             <Text style={styles.label}>Team Members</Text>
             {practice?.team_members && practice.team_members.length > 0 ? (
-              practice.team_members.map((tm, idx) => (
-                <Text key={idx} style={styles.value}>{tm}</Text>
+              practice.team_members.map((tm: any, idx: number) => (
+                <View key={idx} style={{ marginBottom: 4 }}>
+                  <Text style={styles.value}>
+                    {tm.name} ({tm.role}){tm.contact ? ` - ${tm.contact}` : ""}
+                  </Text>
+                </View>
               ))
             ) : (
               <Text style={styles.value}>No team members</Text>
@@ -211,12 +215,12 @@ export default function Settings() {
                 onChangeText={v => handleEditChange("phone", v)}
               />
               <Text style={styles.modalLabel}>Team Members</Text>
-              {editForm?.team_members.map((tm, idx) => (
+              {editForm?.team_members.map((tm: any, idx) => (
                 <View key={idx} style={styles.teamRow}>
                   <TextInput
                     style={[styles.input, { flex: 1, marginRight: 8 }]}
-                    placeholder={`Team Member ${idx + 1}`}
-                    value={tm}
+                    placeholder={tm.name ? tm.name : `Team Member ${idx + 1}`}
+                    value={tm.name}
                     onChangeText={v => handleTeamMemberChange(idx, v)}
                   />
                   <TouchableOpacity style={styles.removeBtn} onPress={() => removeTeamMember(idx)}>

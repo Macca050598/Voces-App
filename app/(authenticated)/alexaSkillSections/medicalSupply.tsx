@@ -3,6 +3,7 @@ import { supabase } from "@/utils/supabase";
 import DateTimePicker from '@react-native-community/datetimepicker';
 // import { Picker } from '@react-native-picker/picker';
 import { DropdownMenu, MenuOption } from "@/components/menuTrigger";
+import { useUser } from '@clerk/clerk-expo';
 import React, { useEffect, useState } from "react";
 import {
   FlatList,
@@ -52,6 +53,8 @@ export default function MedicalSupply() {
     storage_conditions: "",
     notes: "",
   });
+  const { user } = useUser();
+  const userId = user?.id;
   const [addLoading, setAddLoading] = useState(false);
   const [usageLoading, setUsageLoading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -67,7 +70,9 @@ export default function MedicalSupply() {
     const { data, error } = await supabase
       .from("medicaltracking")
       .select("id, drug_name, generic_name, manufacturer, lot_number, expiration_date, quantity, unit_of_measure, category, usage_history")
+      .eq("user_id", userId)
       .order("drug_name", { ascending: true });
+
     if (!error && data) setSupplies(data as MedicalSupply[]);
     setLoading(false);
   };
@@ -145,6 +150,7 @@ export default function MedicalSupply() {
       {
         ...addForm,
         quantity: Number(addForm.quantity),
+        user_id: userId, // <-- Add this line!
       },
     ]);
     setAddLoading(false);

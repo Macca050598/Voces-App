@@ -1,122 +1,249 @@
-import BackgroundLogo from "@/components/BackgroundLogo";
 import { Colors } from "@/constants/Colors";
 import { supabase } from "@/utils/supabase";
-import * as Haptics from "expo-haptics";
-import { router } from "expo-router";
-import { useEffect } from "react";
-import { Dimensions, FlatList, Image, Pressable, StyleSheet, Text, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-
-const CARD_DATA = [
-  { key: "app-usage", label: "App Usage", route: "/(authenticated)/alexaSkillSections/appusage" },
-  { key: "guides", label: "Guides", route: "/(authenticated)/alexaSkillSections/guides" },
-  { key: "medical-supplies", label: "Medical Supplies", route: "/(authenticated)/alexaSkillSections/medicalSupply" },
-  { key: "pharmacy-supplies", label: "Pharmacy Supplies", route: "/(authenticated)/alexaSkillSections/pharmacySupply" },
-  { key: "settings", label: "Settings", route: "/(authenticated)/alexaSkillSections/settings" },
-  { key: "store", label: "Store", route: "/(authenticated)/alexaSkillSections/store" },
-];
+import { useUser } from "@clerk/clerk-expo";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import moment from "moment";
+import { useEffect, useState } from "react";
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function AlexaSkill() {
-  const { top } = useSafeAreaInsets();
+  const { user } = useUser();
+  const router = useRouter();
+  const [convos, setConvos] = useState<any[]>([]);
+  const [stats, setStats] = useState({
+    lastUsed: null,
+    total: 0,
+    mostCommon: "",
+    recentTypes: [] as string[],
+  });
 
   useEffect(() => {
-    const testSupabase = async () => {
-      const { data, error } = await supabase.from('alexa_emergency').select('*').limit(1);
-      if (error) {
-        console.log('Supabase connection error:', error);
+    const fetchConvos = async () => {
+      // Step 1: Fetch device IDs for this user
+      const { data: devices, error: deviceError } = await supabase
+        .from("devices")
+        .select("device_id")
+        .eq("user_id", user?.id);
+      if (deviceError || !devices || devices.length === 0) {
+        setConvos([]);
+        setStats({ lastUsed: null, total: 0, mostCommon: "", recentTypes: [] });
+        return;
+      }
+      const deviceIds = devices.map((d: any) => d.device_id);
+      // Step 2: Fetch conversations for these device IDs
+      const { data } = await supabase
+        .from("alexa_emergency")
+        .select("*")
+        .in("device_id", deviceIds)
+        .order("start_timestamp", { ascending: false });
+      setConvos(data || []);
+      if (data && data.length > 0) {
+        setStats({
+          lastUsed: data[0].start_timestamp,
+          total: data.length,
+          mostCommon: mostCommonType(data),
+          recentTypes: data.slice(0, 5).map((c: any) => c.emergency_type || "Unknown"),
+        });
       } else {
-        console.log('Supabase connection success, sample data:', data);
+        setStats({ lastUsed: null, total: 0, mostCommon: "", recentTypes: [] });
       }
     };
-    testSupabase();
-  }, []);
+    fetchConvos();
+  }, [user?.id]);
 
-  const onPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push("/(authenticated)/alexaSkillSections/appusage");
+  function mostCommonType(data: any[]) {
+    const counts: Record<string, number> = {};
+    data.forEach(c => {
+      const type = c.emergency_type || "Unknown";
+      counts[type] = (counts[type] || 0) + 1;
+    });
+    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || "Unknown";
   }
+
   return (
-    <View style={[styles.container, { paddingTop: top }]}> 
-      <BackgroundLogo opacity={1} position="right" />
-      <Image source={require("@/assets/images/Logo/Full Color Logo Transparent.png")} style={styles.logo} />
-      <FlatList
-        data={CARD_DATA}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
-        keyExtractor={item => item.key}
-        contentContainerStyle={styles.grid}
-        renderItem={({ item }) => (
-          <Pressable
-            style={({ pressed }) => [
-              styles.card,
-              pressed && styles.cardPressed,
-            ]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push(item.route as any);
-            }}
-          >
-            <Text style={styles.cardLabel}>{item.label}</Text>
-          </Pressable>
-        )}
-      />
+    <View style={{ flex: 1, backgroundColor: Colors.background, paddingTop: 0 }}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Ionicons name="mic-circle-outline" size={48} color={Colors.primary} />
+        <Text style={styles.title}>Alexa Skill</Text>
+        <Text style={styles.subtitle}>Emergency voice assistant for your practice</Text>
+      </View>
+
+      <View style={styles.container}>
+        {/* Stats Row */}
+        <View style={styles.statsRow}>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Last Used</Text>
+            <Text style={[styles.statValue, { color: stats.lastUsed ? Colors.primary : Colors.lightText }]}>
+              {stats.lastUsed ? moment(stats.lastUsed).format("MMM D, HH:mm") : "Never"}
+            </Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Emergencies</Text>
+            <Text style={styles.statValue}>{stats.total}</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Most Common</Text>
+            <Text style={styles.statValue}>{stats.mostCommon}</Text>
+          </View>
+        </View>
+
+        {/* Recent Emergency Types */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Recent Emergency Types</Text>
+          <View style={styles.typeBadgesRow}>
+            {stats.recentTypes.slice(0, 4).map((type, idx) => (
+              <View key={idx} style={styles.typeBadge}>
+                <Text style={styles.typeBadgeText}>{type}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Past Conversations */}
+        <View style={styles.sectionHeaderRow}>
+          <Text style={styles.sectionTitle}>Past Conversations</Text>
+          <TouchableOpacity onPress={() => router.push("/(authenticated)/alexaSkillSections/appusage")}> 
+            <Text style={styles.linkText}>See All</Text>
+          </TouchableOpacity>
+        </View>
+        <FlatList
+          data={convos.slice(0, 3)}
+          keyExtractor={item => item.conversation_id}
+          renderItem={({ item }) => (
+            <View style={styles.convoCard}>
+              <TouchableOpacity
+                onPress={() => router.push({ pathname: "/(authenticated)/alexaSkillSections/appusage", params: { convoId: item.conversation_id } })}
+              >
+                <Text style={styles.convoType}>{item.emergency_type || "Unknown"}</Text>
+                <Text style={styles.convoDate}>{moment(item.start_timestamp).format("MMM D, HH:mm")}</Text>
+                <View style={[styles.statusBadge, item.status === "active" ? styles.active : styles.completed]}>
+                  <Text style={styles.statusText}>{item.status.charAt(0).toUpperCase() + item.status.slice(1)}</Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          )}
+          ListEmptyComponent={<Text style={styles.noConvos}>No conversations yet.</Text>}
+          contentContainerStyle={{ paddingBottom: 16 }}
+        />
+
+        {/* Guides */}
+        <TouchableOpacity
+          style={styles.guidesButton}
+          onPress={() => router.push("/(authenticated)/alexaSkillSections/guides")}
+        >
+          <Ionicons name="book-outline" size={22} color="#fff" />
+          <Text style={styles.guidesButtonText}>View Alexa Guides</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
-const CARD_WIDTH = (Dimensions.get("window").width - 60) / 2;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 20,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: Colors.dark,
-    marginBottom: 24,
-    letterSpacing: 0.5,
-  },
-  grid: {
-    gap: 18,
-  },
-  row: {
-    flex: 1,
+  header: { alignItems: "center", marginBottom: 24, marginTop: 50 },
+  title: { fontSize: 28, fontWeight: "bold", color: Colors.dark, marginTop: 10 },
+  subtitle: { fontSize: 15, color: Colors.lightText, marginTop: 4, textAlign: "center" },
+  statsRow: {
+    flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 18,
+    marginBottom: 32,
+    gap: 16,
   },
-  card: {
-    width: CARD_WIDTH,
-    aspectRatio: 1.1,
+  statCard: {
+    flex: 1,
+    minWidth: 0,
     backgroundColor: "#fff",
-    borderRadius: 18,
-    justifyContent: "center",
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 8,
     alignItems: "center",
+    justifyContent: "center",
+    marginHorizontal: 4,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.10,
-    shadowRadius: 12,
-    elevation: 6,
-    marginBottom: 0,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
     borderWidth: 1,
-    borderColor: "#f0f0f0",
+    borderColor: Colors.lightBorder,
   },
-  cardPressed: {
-    backgroundColor: Colors.primary + "10",
-    transform: [{ scale: 0.97 }],
-  },
-  cardLabel: {
-    fontSize: 18,
+  statLabel: {
+    fontSize: 13,
+    color: Colors.lightText,
     fontWeight: "600",
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  statValue: {
+    fontSize: 15,
+    fontWeight: "bold",
     color: Colors.primary,
     textAlign: "center",
-    letterSpacing: 0.2,
   },
-  logo: {
-    width: 300,
-    height: 100,
-    marginBottom: 0,
-    alignSelf: "center",
+  section: { marginBottom: 10 },
+  sectionHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8, marginTop: 12 },
+  sectionTitle: { fontSize: 18, fontWeight: "bold", color: Colors.dark, marginBottom: 8 },
+  typeBadgesRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  typeBadge: {
+    backgroundColor: "#f6f6fa",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 8,
+    marginBottom: 6,
   },
+  typeBadgeText: { color: Colors.primary, fontWeight: "600", fontSize: 14 },
+  convoCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: Colors.lightBorder,
+  },
+  convoType: { fontWeight: "bold", color: Colors.dark, fontSize: 16 },
+  convoDate: { color: Colors.lightText, fontSize: 13, marginTop: 2 },
+  statusBadge: {
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    alignSelf: "flex-start",
+    marginTop: 6,
+    marginBottom: 2,
+  },
+  active: {
+    backgroundColor: "#ffe066",
+  },
+  completed: {
+    backgroundColor: "#e0e0e0",
+  },
+  statusText: {
+    fontSize: 13,
+    fontWeight: "bold",
+    color: Colors.dark,
+  },
+  noConvos: { color: Colors.lightText, textAlign: "center", marginTop: 10 },
+  guidesButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.primary,
+    borderRadius: 10,
+    paddingVertical: 16,
+    justifyContent: "center",
+    marginTop: 16,
+    marginBottom: 4,
+  },
+  guidesButtonText: { color: "#fff", fontWeight: "bold", fontSize: 16, marginLeft: 10 },
+  linkText: { color: Colors.primary, fontWeight: "600", fontSize: 15 },
 }); 

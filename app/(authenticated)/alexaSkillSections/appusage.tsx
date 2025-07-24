@@ -1,5 +1,6 @@
 import { Colors } from "@/constants/Colors";
 import { supabase } from "@/utils/supabase";
+import { useUser } from '@clerk/clerk-expo';
 import React, { useEffect, useState } from "react";
 import {
   FlatList,
@@ -28,19 +29,35 @@ export default function AppUsage() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<AlexaEmergency | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
-
+  const { user } = useUser();
+  const userId = user?.id;
+  
   useEffect(() => {
+    if (!userId) return;
     const fetchConversations = async () => {
       setLoading(true);
+      // Step 1: Fetch device IDs for this user
+      const { data: devices, error: deviceError } = await supabase
+        .from("devices")
+        .select("device_id")
+        .eq("user_id", userId);
+      if (deviceError || !devices || devices.length === 0) {
+        setConversations([]);
+        setLoading(false);
+        return;
+      }
+      const deviceIds = devices.map((d: any) => d.device_id);
+      // Step 2: Fetch conversations for these device IDs
       const { data, error } = await supabase
         .from("alexa_emergency")
         .select("*")
+        .in("device_id", deviceIds)
         .order("start_timestamp", { ascending: false });
       if (!error && data) setConversations(data as AlexaEmergency[]);
       setLoading(false);
     };
     fetchConversations();
-  }, []);
+  }, [userId]);
 
 
   // Always treat messages as an array

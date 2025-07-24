@@ -31,7 +31,7 @@ const InitialLayout = () => {
     
     if (isSignedIn && !inAuthGroup) {
       // User is signed in but not in authenticated group, redirect to authenticated area
-      router.replace('/(authenticated)/(tabs)/today');
+      router.replace('/(authenticated)/(tabs)/alexaSkill');
     } else if (!isSignedIn && pathname !== '/') {
       // User is not signed in but trying to access authenticated area, redirect to login
       router.replace('/');
